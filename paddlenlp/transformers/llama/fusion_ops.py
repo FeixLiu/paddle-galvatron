@@ -138,7 +138,7 @@ def rms_norm_fused(x_in, w, eps, use_fast_ln=False):
         return fast_ln.fast_rms_norm(x_in, w, eps)[0]
     else:
         import paddlenlp_kernel.cuda.fused_ln as fused_ln
-        print(f'[liguangming] use fused_ln')
+        # print(f'[liguangming] use fused_ln')
         # fused_ln = try_import("fused_ln")
         return fused_ln.fused_rms_norm(x_in, w, eps)[0]
 
@@ -285,7 +285,7 @@ def fusion_flash_attention(
                             enable=skip_recompute,
                         )
                 else:
-                    print(f'[linguangming] [flash-attn-check] skip attn_mask_startend_row_indices')
+                    # print(f'[linguangming] [flash-attn-check] skip attn_mask_startend_row_indices')
                     attn_output = no_recompute(
                         F.scaled_dot_product_attention,
                         query_states,

@@ -111,9 +111,9 @@ def scaled_dot_product_attention(
             # if attention_mask is None:
                 # print(f'[linguangming] [flash-attn-check] come here')
                 # attention_mask = get_triangle_upper_mask(attn_weights)
-            print(f'[linguangming] [flash-attn-check] come here')
-            print(f'[linguangming] [flash-attn-check], attention_mask is {attention_mask}')
-            print(f'[linguangming] [flash-attn-check], dtype is {query_states.dtype}') #  是bf16
+            # print(f'[linguangming] [flash-attn-check] come here')
+            # print(f'[linguangming] [flash-attn-check], attention_mask is {attention_mask}')
+            # print(f'[linguangming] [flash-attn-check], dtype is {query_states.dtype}') #  是bf16
             attn_output = fusion_ops.fusion_flash_attention(
                 query_states, config, key_states, value_states, attention_mask, output_attentions, alibi
             )

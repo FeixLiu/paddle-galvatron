@@ -643,7 +643,7 @@ class LlamaDecoderLayerAuto(nn.Layer):
                 (see `cache`).
             cache (`Tuple(paddle.Tensor)`, *optional*): cached past key and value projection states
         """
-        print(f'[linguangming] enter decoder hidden_states.shape: {hidden_states.shape}, hidden_states.dtype:  {hidden_states.dtype}, hidden_states.local_shape: {hidden_states._local_shape}')
+        # print(f'[linguangming] enter decoder hidden_states.shape: {hidden_states.shape}, hidden_states.dtype:  {hidden_states.dtype}, hidden_states.local_shape: {hidden_states._local_shape}')
         # [bs, seq_len, embed_dim] or [seq_len / n, bs, embed_dim] (if sequence_parallel)
         residual = hidden_states
 

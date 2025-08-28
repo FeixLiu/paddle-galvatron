@@ -222,7 +222,7 @@ class AutoTrainer(Trainer):
                 config=self.auto_dist_config,
             )
         else:
-            print(f'[linguangming] [debug] self.args.sharding is {self.args.sharding}')
+            # print(f'[linguangming] [debug] self.args.sharding is {self.args.sharding}')
             sharding_parallel_mesh_dimension = self.args.sharding_parallel_mesh_dimension
             if ShardingOption.SHARD_OP in self.args.sharding:
                 self.optimizer = dist.shard_optimizer(
@@ -231,14 +231,14 @@ class AutoTrainer(Trainer):
                     self.args.gradient_accumulation_steps,
                 )
             elif ShardingOption.SHARD_GRAD_OP in self.args.sharding:
-                print(f'[linguangming] [paddlenlp.trainer.auto_trainer.py] sharding zero2')
+                # print(f'[linguangming] [paddlenlp.trainer.auto_trainer.py] sharding zero2')
                 self.optimizer = dist.shard_optimizer(
                     self.optimizer,
                     dist.ShardingStage2(sharding_mesh_dim=sharding_parallel_mesh_dimension),
                     self.args.gradient_accumulation_steps,
                 )
             elif ShardingOption.FULL_SHARD in self.args.sharding:
-                print(f'[linguangming] [paddlenlp.trainer.auto_trainer.py] sharding zero3')
+                # print(f'[linguangming] [paddlenlp.trainer.auto_trainer.py] sharding zero3')
                 self.optimizer = dist.shard_optimizer(
                     self.optimizer,
                     dist.ShardingStage3(sharding_mesh_dim=sharding_parallel_mesh_dimension),
@@ -258,8 +258,8 @@ class AutoTrainer(Trainer):
             local_size = math.prod(param._local_shape)
             param_total_size += total_size
             param_local_size += local_size
-            print(f'[linguangming] auto_trainer.py, param name: {name}, shape: {param.shape}, local_shape: {param._local_shape}, total_size: {total_size}, local_size: {local_size}')
-        print(f'[linguangming] auto_trainer.py, param_total_size: {param_total_size}, param_local_size: {param_local_size}')
+            # print(f'[linguangming] auto_trainer.py, param name: {name}, shape: {param.shape}, local_shape: {param._local_shape}, total_size: {total_size}, local_size: {local_size}')
+        # print(f'[linguangming] auto_trainer.py, param_total_size: {param_total_size}, param_local_size: {param_local_size}')
 
         if self.args.to_static:
             unified_strategy = dist.Strategy()
@@ -278,7 +278,7 @@ class AutoTrainer(Trainer):
             temp_loader = self._wrap_for_dist_loader(self.get_train_dataloader())
             model = dist.to_static(model, temp_loader, self.criterion, self.optimizer, strategy=unified_strategy)
 
-        print(f'[linguangming] After dist.to_static, the model memory footprint ')
+        # print(f'[linguangming] After dist.to_static, the model memory footprint ')
         from paddle import framework, core
         current_device = framework._current_expected_place_()
         max_memory_allocated = core.device_memory_stat_peak_value("Allocated", current_device.get_device_id()) / 2**20
@@ -294,8 +294,8 @@ class AutoTrainer(Trainer):
                 local_size = math.prod(param._local_shape)
                 param_total_size += total_size
                 param_local_size += local_size
-                print(f'[linguangming] auto_trainer.py, param name: {name}, shape: {param.shape}, local_shape: {param._local_shape}, total_size: {total_size}, local_size: {local_size}')
-            print(f'[linguangming] auto_trainer.py, param_total_size: {param_total_size}, param_local_size: {param_local_size}')
+                # print(f'[linguangming] auto_trainer.py, param name: {name}, shape: {param.shape}, local_shape: {param._local_shape}, total_size: {total_size}, local_size: {local_size}')
+            # print(f'[linguangming] auto_trainer.py, param_total_size: {param_total_size}, param_local_size: {param_local_size}')
 
         self.model_wrapped = model
         return model, dist_loader
@@ -616,9 +616,9 @@ class AutoTrainer(Trainer):
                 #     paddle_profiler = Profiler(targets=[profiler.ProfilerTarget.CPU, profiler.ProfilerTarget.GPU], 
                 #                                on_trace_ready = profiler.export_chrome_tracing('./no-flash_attn'))
                 #     paddle_profiler.start()
-                if step == 6 or step == 7 or step == 8:
+                if False: # step == 6 or step == 7 or step == 8:
                     if step == 6:
-                        print(f'[linguangming] self.libcudart.cudaProfilerStart() when step == 6')
+                        # print(f'[linguangming] self.libcudart.cudaProfilerStart() when step == 6')
                         self.libcudart.cudaProfilerStart()
                     
                     # 以下内容原封不动copy
@@ -685,7 +685,7 @@ class AutoTrainer(Trainer):
                                 step_control += 1
                         
                     if step == 8:
-                        print(f'[linguangming] self.libcudart.cudaProfilerStop() when step == 8')
+                        # print(f'[linguangming] self.libcudart.cudaProfilerStop() when step == 8')
                         self.libcudart.cudaProfilerStop()
                 else:
                     for inputs in inputs_list:
