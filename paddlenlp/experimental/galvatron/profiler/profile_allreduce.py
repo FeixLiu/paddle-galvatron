@@ -128,7 +128,7 @@ def train(args):
     paddle.distributed.init_parallel_env()
     
     rank = paddle.distributed.get_rank()
-    local_rank = paddle.distributed.ParallelEnv().local_rank
+    local_rank = paddle.device.get_device()
     set_seed(rank)
         
     args.num_layers = 24
@@ -173,7 +173,7 @@ def train(args):
         ) as p:
         # for input in 
         for i, input in enumerate(tqdm(dataloader)):
-            input = input.to(f"gpu:{local_rank}")
+            input = input.to(paddle.device.get_device())
             logits = model(input)
             loss = fake_loss_func(input, logits)
             loss.backward()
@@ -216,7 +216,7 @@ def train(args):
     if args.profile_time == 0:  
         allreduce_time_24_layer = comm_time / 10 # [note] because we have 10 iterations in the dataloader
         comm_coe = allreduce_message_size_total / allreduce_time_24_layer
-        comm_coe = paddle.to_tensor([comm_coe], dtype='float32', place=f"gpu:{local_rank}")
+        comm_coe = paddle.to_tensor([comm_coe], dtype='float32', place=paddle.device.get_device())
         paddle.distributed.all_reduce(comm_coe, group=tp_group, op=paddle.distributed.ReduceOp.SUM)
         comm_coe = comm_coe.numpy()[0] / tp_group.world_size
         print(f"comm_coe: {comm_coe} MB/ms")
@@ -235,7 +235,7 @@ def train(args):
             write_json_config(config, save_file_name)
     else:
         per_comm_time = comm_time / comm_num
-        per_comm_time = paddle.to_tensor([per_comm_time], dtype='float32', place=f"gpu:{local_rank}")
+        per_comm_time = paddle.to_tensor([per_comm_time], dtype='float32', place=paddle.device.get_device())
         dist.all_reduce(per_comm_time, group=tp_group, op=paddle.distributed.ReduceOp.SUM)
         comm_coe = per_comm_time.numpy()[0] / tp_group.world_size
         

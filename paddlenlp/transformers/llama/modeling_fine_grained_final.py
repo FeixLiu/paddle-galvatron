@@ -476,7 +476,7 @@ class LlamaAttentionFineGrainedFinal(nn.Layer):
             
             
             #  用于debug
-            print(f'[linguangming] query_states, key_states, value_state local shape is {query_states._local_shape}, {key_states._local_shape}, {value_states._local_shape}')
+            # print(f'[linguangming] query_states, key_states, value_state local shape is {query_states._local_shape}, {key_states._local_shape}, {value_states._local_shape}')
             
         else:
             if self.sep_parallel_degree > 1:
@@ -650,7 +650,7 @@ class LlamaAttentionFineGrainedFinal(nn.Layer):
             attn_output = outputs
 
         # 用于debug
-        print(f'[linguangming] after scaled_dot_product_attention, attn_output local shape is {attn_output._local_shape}') #  TODO 注意此处是对的
+        # print(f'[linguangming] after scaled_dot_product_attention, attn_output local shape is {attn_output._local_shape}') #  TODO 注意此处是对的
 
         if self.sequence_parallel:
             attn_output = paddle.transpose(attn_output, [1, 0, 2])
@@ -658,13 +658,13 @@ class LlamaAttentionFineGrainedFinal(nn.Layer):
         # SP added by linguangming
         if self.use_ulysees:
             attn_output = sep_reshard_layer(attn_output, split_axis=1, concat_axis=2) 
-            print(f'[linguangming] after sep_reshard_layer, attn_output local shape is {attn_output._local_shape}') # TODO 注意此处是对的
+            # print(f'[linguangming] after sep_reshard_layer, attn_output local shape is {attn_output._local_shape}') # TODO 注意此处是对的
         
         # [bs, q_len, num_head * head_dim]
         attn_output = self.o_proj(attn_output)
         
         # 用于debug
-        print(f'[linguangming] after o_proj, attn_output local shape is {attn_output._local_shape}')
+        # print(f'[linguangming] after o_proj, attn_output local shape is {attn_output._local_shape}')
 
         # enter sp region
         if self.sequence_parallel:
@@ -733,7 +733,7 @@ class LlamaDecoderLayerFineGrainedFinal(nn.Layer):
         """
         # [bs, seq_len, embed_dim] or [seq_len / n, bs, embed_dim] (if sequence_parallel)
         # print(f'[linguangming] enter decoder, hidden_states mesh is {hidden_states.process_mesh}' )
-        print(f'[linguangming] enter decoder, hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] enter decoder, hidden_states.local_shape is {hidden_states._local_shape}')
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
 
@@ -778,14 +778,14 @@ class LlamaDecoderLayerFineGrainedFinal(nn.Layer):
         if use_cache:
             present_key_value = outputs[2 if output_attentions else 1]
 
-        print(f'[linguangming] before residual + atten_output, hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] before residual + atten_output, hidden_states.local_shape is {hidden_states._local_shape}')
         hidden_states = residual + hidden_states
-        print(f'[linguangming] after residual +  atten_output, hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] after residual +  atten_output, hidden_states.local_shape is {hidden_states._local_shape}')
         
         # Fully Connected
         residual = hidden_states
         hidden_states = self.post_attention_layernorm(hidden_states)
-        print(f'[linguangming] after post_attention_layernorm, hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] after post_attention_layernorm, hidden_states.local_shape is {hidden_states._local_shape}')
 
         # enter tp region
         if self.sequence_parallel:
@@ -795,10 +795,10 @@ class LlamaDecoderLayerFineGrainedFinal(nn.Layer):
                 [dist.Shard(1), dist.Replicate()],
             )
 
-        print(f'[linguangming] before enter mlp, the hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] before enter mlp, the hidden_states.local_shape is {hidden_states._local_shape}')
         hidden_states = self.mlp(hidden_states)
         
-        print(f'[linguangming] after enter mlp, the hidden_states.local_shape is {hidden_states._local_shape}')
+        # print(f'[linguangming] after enter mlp, the hidden_states.local_shape is {hidden_states._local_shape}')
 
         # enter sp region
         if self.sequence_parallel:
@@ -1016,7 +1016,7 @@ class LlamaModelFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
                 if self.sharding_stage_list[i + 1] == 3:
                     setattr(param, 'real_use_zero3', True)
                 else:
-                    print(f'[linguangming] {name} real_use_zero3: False')
+                    # print(f'[linguangming] {name} real_use_zero3: False')
                     setattr(param, 'real_use_zero3', False)
             decoder_layers.append(decoder_layer) 
             self.is_pipeline_stage_first_layer[i] = is_pipeline_stage_first_layer_func(i)   
@@ -1171,9 +1171,9 @@ class LlamaModelFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
             
         hidden_states = inputs_embeds
         hidden_states = dist.reshard(hidden_states, self.meshs[0], self.placements) # [NOTE] 此处修改
-        print(f'after embedding hidden_states is {hidden_states}')
+        # print(f'after embedding hidden_states is {hidden_states}')
         if not isinstance(self.redistributed_flag[0], int):
-            print(f'[linguangming] [modeling_fine_grained.py], after embedding, hidden_states need to be redistributed')
+            # print(f'[linguangming] [modeling_fine_grained.py], after embedding, hidden_states need to be redistributed')
             if dist.get_rank() in hidden_states.process_mesh.process_ids:
                 hidden_states = RedistributedLayer.apply(hidden_states, self.redistributed_flag[0])
             else:
@@ -1185,7 +1185,7 @@ class LlamaModelFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
         next_decoder_cache = () if use_cache else None
         for idx, (decoder_layer) in enumerate(self.layers):
             rank = dist.get_rank()
-            print(f'[linguangming] idx {idx}, hidden_states {hidden_states}')
+            # print(f'[linguangming] idx {idx}, hidden_states {hidden_states}')
             
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
@@ -1277,10 +1277,10 @@ class LlamaModelFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
                 
             if not isinstance(self.redistributed_flag[idx + 1], int): # [NOTE] 注意需要加1
                 if dist.get_rank() in hidden_states.process_mesh.process_ids:
-                    print(f'[linguangming] [modeling_fine_grained.py], layer{idx} -> layer{idx + 1} should call redistributed')
+                    # print(f'[linguangming] [modeling_fine_grained.py], layer{idx} -> layer{idx + 1} should call redistributed')
                     hidden_states = RedistributedLayer.apply(hidden_states, self.redistributed_flag[idx + 1])
                 else:
-                    print(f'[linguangming] [modeling_fine_grained.py], layer{idx} -> layer{idx + 1} should call dummy redistributed')
+                    # print(f'[linguangming] [modeling_fine_grained.py], layer{idx} -> layer{idx + 1} should call dummy redistributed')
                     hidden_states = DummyRedistributedLayer.apply(hidden_states, self.redistributed_flag[idx + 1])
 
         # norm layer
@@ -1325,7 +1325,7 @@ class LlamaPretrainingCriterionFineGrainedFinal(paddle.nn.Layer):
 
     def forward(self, prediction_scores, masked_lm_labels):
         if masked_lm_labels.process_mesh.shape[0] != prediction_scores.process_mesh.shape[0]:
-            print(f'[linguangming] [modeling_fine_grained.py], prediction_scores and masked_lm_labels should be in the same mesh')
+            # print(f'[linguangming] [modeling_fine_grained.py], prediction_scores and masked_lm_labels should be in the same mesh')
             if dist.get_rank() in prediction_scores.process_mesh.process_ids:
                 from paddlenlp.experimental.galvatron.runtime.redistributed import split_batch, gather_batch
                 if masked_lm_labels.process_mesh.shape[0] < prediction_scores.process_mesh.shape[0]: # dp increase -> split batch
@@ -1533,7 +1533,7 @@ class LlamaForCausalLMFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
         )
 
         hidden_states = outputs[0]  # [bs, seq_len, dim]
-        print(f'[linguangming] [local-shape-check]: hidden_states enter lm_head is {hidden_states._local_shape}')
+        # print(f'[linguangming] [local-shape-check]: hidden_states enter lm_head is {hidden_states._local_shape}')
         # enter tp region
         sequence_parallel_flag = False
         if self.config.sequence_parallel and 'sep' not in self.meshs[-1].dim_names:
@@ -1554,7 +1554,7 @@ class LlamaForCausalLMFineGrainedFinal(LlamaPretrainedModelFineGrainedFinal):
 
         logits = self.lm_head(hidden_states, tensor_parallel_output=tensor_parallel_output) # actually, tensor_parallel_output is unused
 
-        print(f'[linguangming]  logits.mesh.shape is {logits.process_mesh.shape}')
-        print(f'[linguangming] logits._local_shape  is {logits._local_shape}')
+        # print(f'[linguangming]  logits.mesh.shape is {logits.process_mesh.shape}')
+        # print(f'[linguangming] logits._local_shape  is {logits._local_shape}')
         
         return logits

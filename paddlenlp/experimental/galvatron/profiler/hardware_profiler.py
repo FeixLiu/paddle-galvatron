@@ -252,7 +252,7 @@ class HardwareProfiler():
     def profile_overlap(self):
         print("Profiling overlap slowdown coefficient...")
         interpreter = os.getenv('INTERPRETER')
-        CMD = f'{interpreter} -m paddle.distributed.launch --gpus=0,1,2,3,4,5,6,7 --log_dir output/profile_overlap '
+        CMD = f'{interpreter} -m paddle.distributed.launch --gpus=0,1,2,3,4,5,6,7 --log_dir ./output/profile_overlap '
         script_path = os.path.join(self.path, "profile_overlap.py")
         CMD += f'{script_path} --output_dir "./output"'
         
@@ -266,7 +266,7 @@ class HardwareProfiler():
             f.write(f'{CMD}\n')
             f.write('sleep 1\n')
             
-            f.write(f'rm -r ./profiler_log')
+            f.write(f'rm -rf ./profiler_log')
     
     def profile_allreduce(self):
         args = self.args
@@ -276,7 +276,7 @@ class HardwareProfiler():
         CMD_LIST = []
         while tp_limit > 1:
             CMD = os.getenv('LAUNCHER')
-            CMD += f' --log_dir output/profile_allreduce '
+            CMD += f' --log_dir ./output/profile_allreduce '
             script_path = os.path.join(self.path, "profile_allreduce.py ")
             CMD += f'{script_path} --output_dir "./output" '
             CMD += f'--profile_time 0 --tp_deg {tp_limit} --save_file_name {save_file_name} '
@@ -294,7 +294,7 @@ class HardwareProfiler():
                 f.write(f'{cmd}\n')
                 f.write('sleep 1\n')
             
-            f.write(f'rm -r ./profiler_log')
+            f.write(f'rm -rf ./profiler_log')
     
     def profile_p2p(self):
         args = self.args
@@ -304,7 +304,7 @@ class HardwareProfiler():
         CMD_LIST = []
         while pp_deg <= args.max_pp_deg:
             CMD = os.getenv('LAUNCHER')
-            CMD += ' --log_dir /output/profile_p2p '
+            CMD += ' --log_dir ./output/profile_p2p '
             script_path = os.path.join(self.path, "profile_p2p.py")
             CMD += f'{script_path} --output_dir "./output" '
             CMD += f'--pp_deg {pp_deg} --save_file_name {save_file_name} '
@@ -322,7 +322,7 @@ class HardwareProfiler():
                 f.write(f'{cmd}\n')
                 f.write('sleep 1\n')
 
-            f.write(f'rm -r ./profiler_log')
+            f.write(f'rm -rf ./profiler_log')
             
     def profile_sp(self):
         print("Profiling sp bandwidth...")
@@ -331,7 +331,7 @@ class HardwareProfiler():
         
         def allreduce_script(allreduce_size, buffer_size):
             CMD = os.getenv('LAUNCHER')
-            CMD += ' --log_dir /output/profile_allreduce_sp '
+            CMD += ' --log_dir ./output/profile_allreduce_sp '
             script_path = os.path.join(self.path, "profile_allreduce.py ")
             CMD += f'{script_path} --output_dir "./output" '
             CMD += f'--profile_time 1 --tp_deg {allreduce_size} --save_file_name {save_file_name} --local_batch_size {buffer_size}'
@@ -355,11 +355,11 @@ class HardwareProfiler():
                     buffer_size //= 2
                 allreduce_size //= 2
             
-            f.write(f'rm -r ./profiler_log')
+            f.write(f'rm -rf ./profiler_log')
                 
         def all2all_script(all2all_size, buffer_size):
             CMD = os.getenv('LAUNCHER')
-            CMD += ' --log_dir /output/profile_all2all '
+            CMD += ' --log_dir ./output/profile_all2all '
             script_path = os.path.join(self.path, "profile_all2all.py ")
             CMD += f'{script_path} --output_dir "./output" '
             CMD += f'--tp_deg {all2all_size} --save_file_name {save_file_name} --local_batch_size {buffer_size}'

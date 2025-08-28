@@ -1,14 +1,37 @@
 set -x
 unset CUDA_VISIBLE_DEVICES
 
-# export CUDA_DEVICE_MAX_CONNECTIONS=1
-# export NCCL_DEBUG=INFO
-# export NCCL_IB_HCA=mlx5_bond_1,mlx5_bond_4,mlx5_bond_3,mlx5_bond_2,mlx5_bond_7,mlx5_bond_6,mlx5_bond_8,mlx5_bond_5
-# export NCCL_IB_DISABLE=0
-# export NCCL_SOCKET_IFNAME=bond1
-# export NCCL_IB_GID_INDEX=3
-# export NCCL_NET_GDR_LEVEL=1
-# export GLOO_SOCKET_IFNAME=bond1
+nnodes=$PADDLE_TRAINERS_NUM
+rank=$PADDLE_TRAINER_ID
+
+unset PADDLE_ELASTIC_JOB_ID
+unset PADDLE_TRAINER_ENDPOINTS
+unset DISTRIBUTED_TRAINER_ENDPOINTS
+unset FLAGS_START_PORT
+unset PADDLE_ELASTIC_TIMEOUT
+unset PADDLE_TRAINERS_NUM
+unset PADDLE_TRAINER_ID
+unset PADDLE_WORKERS_IP_PORT_LIST
+unset PADDLE_TRAINERS
+unset PADDLE_NUM_GRADIENT_SERVERS
+
+START_RANK=0
+END_RANK=8
+
+if [[ $rank -lt $START_RANK ]]; then
+    exit 0
+fi
+
+if [[ $rank -ge $END_RANK ]]; then
+    exit 0
+fi
+export rank=$(($rank-$START_RANK))
+export nnodes=$(($END_RANK-$START_RANK))
+master_ip=`cat /root/paddlejob/workspace/hostfile | head -n $(($START_RANK+1)) | tail -n 1 | awk '{print $1}'`
+export master=$master_ip
+export port=36677
+
+export interpreter="<path to your own python>"
 
 task_name="fine_grained_config-with-manual"
 dir_name="fine-vs-corase"
@@ -20,8 +43,8 @@ export SOT_LOG_LEVEL=4
 export PYTHONPATH=../../../:$PYTHONPATH
 
 TRAINER="./train_qwen_fine_graine.py"
-LAUNCHER="python -u -m paddle.distributed.launch --log_level DEBUG"
-LAUNCHER="${LAUNCHER} --gpus 0,1,2,3,4,5,6,7" 
+LAUNCHER="python -u -m paddle.distributed.launch"
+LAUNCHER="${LAUNCHER} --master $master:$port --nnodes $nnodes --rank $rank --gpus 0,1,2,3,4,5,6,7"
 LAUNCHER="${LAUNCHER} --log_dir output/$dir_name/$task_name""_log ${TRAINER} --output_dir "./output""
 
 # [max_steps] [logging_steps] [enable_auto_parallel]
@@ -49,13 +72,13 @@ TRAIN_ARGS="
 # still need to use llama as model_type
 MODEL_ARGS=(
     --model_type "llama_fine_grained_final"
-    --num_hidden_layers 16
-    --intermediate_size 11008
+    --num_hidden_layers 72
+    --intermediate_size 25600
     --vocab_size 32000
-    --hidden_size 4096
-    --seq_length 1024
-    --num_attention_heads 32
-    --num_key_value_heads 32
+    --hidden_size 5120
+    --seq_length 32768
+    --num_attention_heads 64
+    --num_key_value_heads 8
 )
 
 # "max_position_embeddings": 32768,
@@ -76,7 +99,7 @@ CONFIG_ARGS="
 
 # [dp_deg, dp_type] [tp_deg, megatron-sp] [pp_deg, 1F1B] [parallel_configs]
 PARALLEL_ARGS=(
-    --to_static 1
+    --to_static 0
     --sharding_parallel_degree 2
     --sharding "stage2"
     --tensor_parallel_degree 4
@@ -109,7 +132,7 @@ DEFAULT_OPTIMIZER_ARGS="
 DATA_ARGS="
     --input_dir ./data \
     --split 949,50,1 \
-    --max_seq_length 1024"
+    --max_seq_length 32768"
 
 # [runtime_profile]
 RUNTIME_PROFILE_ARGS="
@@ -134,6 +157,9 @@ GRANULARITY_RUNTIME_ARGS="
     --fine_grained_config_path ./configs/fine_grained_config.json \
 "
 
+bash kill.sh
+sleep 1
+
 $LAUNCHER \
     "${MODEL_ARGS[@]}" \
     $TRAIN_ARGS \
@@ -142,4 +168,4 @@ $LAUNCHER \
     $DEFAULT_OPTIMIZER_ARGS \
     $DATA_ARGS \
     $RUNTIME_PROFILE_ARGS \
-    $GRANULARITY_RUNTIME_ARGS \
+    $GRANULARITY_RUNTIME_ARGS

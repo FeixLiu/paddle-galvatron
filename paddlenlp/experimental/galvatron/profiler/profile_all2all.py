@@ -36,7 +36,7 @@ def get_tp_groups(tp_deg):
 def train(args):
     dist.init_parallel_env()
     rank  = dist.get_rank()
-    local_rank = paddle.distributed.ParallelEnv().local_rank
+    local_rank = paddle.device.get_device()
     
     # get tp_groups
     all_tp_groups = get_tp_groups(args.tp_deg)
@@ -55,7 +55,7 @@ def train(args):
     # [Step1] warm up
     for _ in range(5):
         input = np.random.rand(*(local_batch_size, 512, 1024))
-        input = paddle.to_tensor(input, dtype=paddle.bfloat16, place=f'gpu:{local_rank}')
+        input = paddle.to_tensor(input, dtype=paddle.bfloat16, place=paddle.device.get_device())
         _ = single_all_to_all(input, tp_groups)
     
     # [Step2] real profile
@@ -64,7 +64,7 @@ def train(args):
     time_list = []
     for _ in range(20):
         input = np.random.rand(*(local_batch_size, 512, 1024)) 
-        input = paddle.to_tensor(input, dtype=paddle.bfloat16, place=f'gpu:{local_rank}')
+        input = paddle.to_tensor(input, dtype=paddle.bfloat16, place=paddle.device.get_device())
         
         paddle.device.synchronize()
         dist.barrier(group=tp_groups) 
@@ -79,7 +79,7 @@ def train(args):
     
     # [Step3] store
     per_comm_time = sum(time_list) / len(time_list)
-    per_comm_time = paddle.to_tensor([per_comm_time], dtype='float32', place=f'gpu:{local_rank}')
+    per_comm_time = paddle.to_tensor([per_comm_time], dtype='float32', place=paddle.device.get_device())
     dist.all_reduce(per_comm_time, group=tp_groups, op=dist.ReduceOp.SUM)
     per_comm_time = per_comm_time.numpy()[0] / tp_groups.world_size
     print(f'per_comm_time  is {per_comm_time}')

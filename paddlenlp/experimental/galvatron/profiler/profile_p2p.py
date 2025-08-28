@@ -75,7 +75,7 @@ def test(args):
     dist.init_parallel_env()
     world_size = dist.get_world_size()
     rank = dist.get_rank()
-    local_rank = dist.ParallelEnv().local_rank
+    local_rank = paddle.device.get_device()
     group = dist.new_group(ranks=[i for i in range(world_size)])
     mesh = dist.ProcessMesh([i for i in range(world_size)], dim_names=['pp'])
     model = LinearModel(rank, world_size, mesh)
@@ -198,7 +198,7 @@ def use_dist_send_recv(args):
     dist.init_parallel_env()
     world_size = dist.get_world_size()
     rank = dist.get_rank()
-    local_rank = paddle.distributed.ParallelEnv().local_rank
+    local_rank = paddle.device.get_device()
     
     local_batch_size = args.local_batch_size
     printf(f"local_batch_size: {local_batch_size}")

@@ -25,16 +25,16 @@ def profile(args):
     # come distibuted envs
     paddle.distributed.init_parallel_env()
     rank = paddle.distributed.get_rank()
-    local_rank = paddle.distributed.ParallelEnv().local_rank
+    local_rank = paddle.device.get_device()
     world_size = paddle.distributed.get_world_size()
     
     # set model
     model = nn.Linear(4096, 4096, bias_attr=False)
-    model = model.to(f'gpu:{local_rank}')
+    model = model.to(paddle.device.get_device())
     compute_tensor = paddle.randn((1024, 4096), dtype='float32')
     comm_tensor = paddle.randn((4096, 4096), dtype='float32')
-    compute_tensor = compute_tensor.to(f'gpu:{local_rank}')
-    comm_tensor = comm_tensor.to(f'gpu:{local_rank}')
+    compute_tensor = compute_tensor.to(paddle.device.get_device())
+    comm_tensor = comm_tensor.to(paddle.device.get_device())
 
     # set stream
     comm_stream = paddle.device.Stream()
@@ -90,14 +90,14 @@ def profile(args):
         
         if len(local_comm_time_list) != 0:
             ave_comm_time = sum(local_comm_time_list) / len(local_comm_time_list)
-            ave_comm_time = paddle.to_tensor([ave_comm_time], dtype='float32', place=f"gpu:{local_rank}")
+            ave_comm_time = paddle.to_tensor([ave_comm_time], dtype='float32', place=paddle.device.get_device())
             paddle.distributed.all_reduce(ave_comm_time, op=paddle.distributed.ReduceOp.SUM)
             ave_comm_time = ave_comm_time.numpy()[0] / world_size
             comm_time_list.append(ave_comm_time)
 
-        if  len(local_compute_time_list) != 0:
+        if len(local_compute_time_list) != 0:
             ave_compute_time = sum(local_compute_time_list) / len(local_compute_time_list)
-            ave_compute_time = paddle.to_tensor([ave_compute_time], dtype='float32', place=f"gpu:{local_rank}")
+            ave_compute_time = paddle.to_tensor([ave_compute_time], dtype='float32', place=paddle.device.get_device())
             paddle.distributed.all_reduce(ave_compute_time, op=paddle.distributed.ReduceOp.SUM)
             ave_compute_time = ave_compute_time.numpy()[0] / world_size
             compute_time_list.append(ave_compute_time)

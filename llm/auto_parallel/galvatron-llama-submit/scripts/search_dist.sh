@@ -1,5 +1,20 @@
 set -x
 
+unset PADDLE_ELASTIC_JOB_ID
+unset PADDLE_TRAINER_ENDPOINTS
+unset DISTRIBUTED_TRAINER_ENDPOINTS
+unset FLAGS_START_PORT
+unset PADDLE_ELASTIC_TIMEOUT
+unset PADDLE_TRAINERS_NUM
+unset PADDLE_TRAINER_ID
+unset PADDLE_WORKERS_IP_PORT_LIST
+unset PADDLE_TRAINERS
+unset PADDLE_NUM_GRADIENT_SERVERS
+
+source <path_to_your_own_python>
+
+export PYTHONPATH=../../..:$PYTHONPATH
+
 ProfileDataParserArgs="
     --time_profile_mode sequence \
     --memory_profile_mode static \
@@ -23,7 +38,7 @@ SearchEngineArgs="
     --max_bsz 64 \
     --bsz_step 1 \
     --max_tp_size 8 \
-    --max_pp_size 4 \
+    --max_pp_size 8 \
     --mixed_precision_type bf16 \
     --memory_upper_limit 95 \
     --sp_space tp \

@@ -1,6 +1,19 @@
 set -x
 unset CUDA_VISIBLE_DEVICES
 
+unset PADDLE_ELASTIC_JOB_ID
+unset PADDLE_TRAINER_ENDPOINTS
+unset DISTRIBUTED_TRAINER_ENDPOINTS
+unset FLAGS_START_PORT
+unset PADDLE_ELASTIC_TIMEOUT
+unset PADDLE_TRAINERS_NUM
+unset PADDLE_TRAINER_ID
+unset PADDLE_WORKERS_IP_PORT_LIST
+unset PADDLE_TRAINERS
+unset PADDLE_NUM_GRADIENT_SERVERS
+
+source <path_to_your_own_python>
+
 task_name="qwen_profile_memory"
 dir_name="profile_memory"
 rm -rf output/$dir_name/$task_name/
@@ -10,7 +23,7 @@ export SOT_LOG_LEVEL=4
 export PYTHONPATH=../../../:$PYTHONPATH
 
 TRAINER="./train_qwen.py"
-LAUNCHER="/apdcephfs_fsgm/share_303760348/anaconda3/envs/lgm-paddle/bin/python -u -m paddle.distributed.launch"
+LAUNCHER="${interpreter} -u -m paddle.distributed.launch"
 LAUNCHER="${LAUNCHER} --gpus 0,1,2,3,4,5,6,7"  # 设置需要使用的GPU
 LAUNCHER="${LAUNCHER} --log_dir output/$dir_name/$task_name""_log ${TRAINER} --output_dir "./output""
 
@@ -44,7 +57,7 @@ TRAIN_ARGS="
 MODEL_ARGS="
     --model_name_or_path "llama" \
     --tokenizer_name_or_path "llama" \
-    --num_hidden_layers 16 \
+    --num_hidden_layers 2 \
     --intermediate_size 25600 \
     --vocab_size 32000 \
     --hidden_size 5120 \
@@ -101,7 +114,7 @@ DEFAULT_OPTIMIZER_ARGS="
 DATA_ARGS="
     --input_dir ./data \
     --split 949,50,1 \
-    --max_seq_length 32768"
+    --max_seq_length 16384"
 
 # [runtime profiler]
 RUNTIME_PROFILE_ARGS="
@@ -116,26 +129,15 @@ MODEL_PROFILER_ARGS="
     --profile_fixed_batch_size 8 \
     --layernum_min 1 \
     --layernum_max 2 \
-    --profile_fixed_seq_length_list 32768 \
+    --profile_min_seq_length 4096 \
+    --profile_max_seq_length 16384 \
+    --profile_seq_length_step 4096 \
     --num_layertype 1 \
     --max_tp_deg 8 \
     --max_per_device_train_batch_size 4 \
 "
 
-# [model profiler] [sequence type]
-# MODEL_PROFILER_ARGS="
-#     --profile_type memory \
-#     --profile_mode sequence \
-#     --profile_fixed_batch_size 8 \
-#     --profile_min_seq_length 2048 \
-#     --profile_max_seq_length 4096 \
-#     --layernum_min 1 \
-#     --layernum_max 2 \
-#     --num_layertype 1 \
-#     --max_tp_deg 8 \
-# "
-
-/apdcephfs_fsgm/share_303760348/anaconda3/envs/lgm-paddle/bin/python ./profile.py \
+${interpreter} ./profile.py \
     $MODEL_ARGS \
     $TRAIN_ARGS \
     $CONFIG_ARGS \
