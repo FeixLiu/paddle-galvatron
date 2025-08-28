@@ -124,7 +124,7 @@ DEFAULT_OPTIMIZER_ARGS="
     --fuse_sequence_parallel_allreduce true \
     --use_flash_attention true \
     --use_fused_rope true \
-    --use_fused_rms_norm false \
+    --use_fused_rms_norm true \
     --enable_linear_fused_grad_add true \
 "
 
