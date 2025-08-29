@@ -1,0 +1,13 @@
+- 对于profile_memory
+    - 始终使用static模式进行profile_memory，并配置profile_fixed_seq_length_list为所需要的序列长度.
+    - 若profile_fixed_seq_length_list序列长度能够正常运行全部case，则在search_dist.sh中将memory_profile_mode设置为static.
+    - 若profile_fixed_seq_length_list序列长度会导致OOM，则将其序列长度逐渐除2减小，直到能够正常运行全部case。此时，在搜索时，将search_dist.sh中将memory_profile_mode设置为sequence.
+    - 举例：若在profile_fixed_seq_length_list为32768的static模式下，部分case会OOM，则将profile_fixed_seq_length_list设置为16384，此时若所有case均能正常运行，则profile_memory成功结束，随后在search_dist.sh中，设置memory_profile_mode为sequence即可。
+
+- 对于搜索出的结果
+    - 在实际运行train_qwen_fine_qwen.sh之前，请同时将per_device_train_batch_size、gradient_accumulation_steps、recompute、sharding_parallel_degree、tensor_parallel_degree、pipeline_parallel_degree设置为fine_grained_config.json中的对应值。
+    - 同时请确保在静态图模式下运行train_qwen_fine_qwen.sh
+    - 举例：
+        - 对于sharding_parallel_degree、tensor_parallel_degree、pipeline_parallel_degree，搜索出来的结果，pp_size对应pipeline_parallel_degree，dp_size_list字符串的首字符数字对应sharding_parallel_degree，tp_size_list字符串的首字符数字对应tensor_parallel_degree。
+        - 对于recompute，若搜索出来的结果中，recompute_list字符串中存在字符1，则将recompute设置为true
+        - 对于gradient_accumulation_steps、per_device_train_batch_size，搜索出来的结果中，gradient_accumulation_steps对于gradient_accumulation_steps，per_device_train_batch_size则由公式global_batch_size/gradient_accumulation_steps/dp_size计算而得
