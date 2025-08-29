@@ -99,7 +99,7 @@ CONFIG_ARGS="
 
 # [dp_deg, dp_type] [tp_deg, megatron-sp] [pp_deg, 1F1B] [parallel_configs]
 PARALLEL_ARGS=(
-    --to_static 0
+    --to_static 1
     --sharding_parallel_degree 2
     --sharding "stage2"
     --tensor_parallel_degree 4

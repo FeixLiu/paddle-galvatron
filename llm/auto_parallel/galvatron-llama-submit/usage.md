@@ -75,7 +75,7 @@ mpirun bash scripts/profile_overlap.sh
 
 *仅需要单机环境*
 
-1. 修改`scripts/profile_memory.sh` 与 `scripts/profile_computation.sh`
+1. 修改 `scripts/profile_memory.sh` 与 `scripts/profile_computation.sh`
 - 更新 `source` 路径，指向配置好的虚拟环境。
 - 更新 `MODEL_ARGS` 中的模型参数，参数与模型大小对照表如下：
 
@@ -91,12 +91,22 @@ mpirun bash scripts/profile_overlap.sh
 
 同时由于对于 `seq_length` 与 `num_hidden_layers` 的配置在 `MODEL_PROFILER_ARGS` 字段中，这两个字段可以不按表格配置。
 
-- 更新 `MODEL_PROFILER_ARGS` 中的profile参数：
+- 更新 `scripts/profile_computation.sh` 中的`MODEL_PROFILER_ARGS` 参数：
   - `profile_mode` 配置为 `sequence` 。
   - `profile_max_seq_length` 配置为 `16384` 。*不要超过这个长度，否则H卡会OOM*
   - `profile_min_seq_length` 配置为 `4096` 。
   - `profile_seq_length_step` 配置为 `4096` 。
   - `num_layertype` 配置为 `1` 。
+
+- 更新 `scripts/profile_memory.sh` 中的`MODEL_PROFILER_ARGS` 参数：
+  - `profile_mode` 配置为 `static` 。
+  - `profile_fixed_seq_length_list` 为所需要的序列长度.
+  - 若 `profile_fixed_seq_length_list` 序列长度能够正常运行全部case，则在下一步 `search_dist.sh` 中的 `memory_profile_mode` 设置为` static` 。
+  - 若 `profile_fixed_seq_length_list` 序列长度会导致OOM，则将其序列长度逐渐除2减小，直到能够正常运行全部case。此时，将下一步 `search_dist.sh` 中的 `memory_profile_mode` 设置为 `sequence` 。
+  - 举例：若在 `profile_fixed_seq_length_list` 为32768的 `static` 模式下，部分case会OOM，
+    则将 `profile_fixed_seq_length_list` 设置为16384，此时若所有case均能正常运行，则 `profile_memory` 成功结束，
+    随后在 `search_dist.sh中` ，设置 `memory_profile_mode` 为 `sequence` 即可。
+
 
 2. 执行profile脚本，进行显存、计算速度profile
 ```bash
@@ -123,7 +133,8 @@ bash scripts/profile_computation.sh
 1. 更新 `scripts/search_dist.sh` 脚本
 - 更新 `source` 路径，指向配置好的虚拟环境。
 - 修改 `ProfileDataParserArgs` 字段：
-  - `time_profile_mode` 与 `memory_profile_mode` 设置为 `sequence` 。
+  - `time_profile_mode` 设置为 `sequence` 。
+  - `profile_mode` 根据实际情况配置为 `static` 或 `sequence` 。 详见*分析模型性能*中对 `scripts/profile_memory.sh` 的描述。
   - `num_layertype` 设置为 `1` 。
   - `hidden_size_list` 、 `layer_num_list` 、 `seqlen_list` 修改为实际的配置，注意，一次只能写一个值。
   - 其余所有config的path修改为实际的path，也就是前两步生成的profile文件。
@@ -152,7 +163,21 @@ tar -xf configs.tar
 2. 修改 `scripts/train_qwen_fine_grained.sh` 中的 `START_RANK` 与 `END_RANK` 为集群中的目标机器。同时修改 `source` 源为自己的虚拟环境。
 3. 修改 `scripts/train_qwen_fine_grained.sh` 中的 `MODEL_ARGS` 为目标模型大小。
 4. 修改 `scripts/train_qwen_fine_grained.sh` 中的 `DATA_ARGS` 的 `max_seq_length` 字段为目标序列长度。
-5根据最优策略运行
+5. 根据 `configs/fine_grained_config.json` 的搜错结果修改 `scripts/train_qwen_fine_grained.sh`：
+- 将 `per_device_train_batch_size` 、 `gradient_accumulation_steps` 、 `recompute` 、 
+`sharding_parallel_degree` 、 `tensor_parallel_degree` 、 `pipeline_parallel_degree` 根据 `configs/fine_grained_config.json` 的结果进行修改。
+  - 对于 `sharding_parallel_degree` 、 `tensor_parallel_degree` 、 `pipeline_parallel_degree` ，
+    搜索出来的结果 `pp_size` 对应 `pipeline_parallel_degree` ，
+    `dp_size_list` 字符串的首字符数字对应 `sharding_parallel_degree` ，
+    `tp_size_list` 字符串的首字符数字对应 `tensor_parallel_degree` 。
+  - 对于 `recompute` ，若搜索出来的结果中， `recompute_list` 字符串中存在字符1，则将 `recompute` 设置为 `true` 。
+  - 对于 `gradient_accumulation_steps` 、 `per_device_train_batch_size` ，搜索出来的结果中
+    `gradient_accumulation_steps` 对于 `gradient_accumulation_steps` ，
+    `per_device_train_batch_size` 则由公式 `global_batch_size/gradient_accumulation_steps/dp_size` 计算而得。
+6. 根据最优策略运行
 ```bash
+cd scripts
+sh cp.sh train_qwen_fine_grained.sh
+cd ..
 mpirun bash scripts/train_qwen_fine_grained.sh
 ```

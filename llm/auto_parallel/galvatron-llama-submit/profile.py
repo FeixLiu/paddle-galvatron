@@ -8,7 +8,7 @@ if __name__ == '__main__':
     model_profiler = ModelProfiler(model_profiler_args, args_dict)
     if model_profiler.args.profile_type == 'memory':
         model_profiler.launch_memory_profiling_static_scripts()
-        model_profiler._process_single_sequence_static_config()
+        model_profiler._process_memory_static_data()
         exit(0)
     model_profiler.launch_profiling()
     model_profiler.process_data()
