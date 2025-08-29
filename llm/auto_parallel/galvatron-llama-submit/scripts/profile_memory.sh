@@ -129,9 +129,7 @@ MODEL_PROFILER_ARGS="
     --profile_fixed_batch_size 8 \
     --layernum_min 1 \
     --layernum_max 2 \
-    --profile_min_seq_length 4096 \
-    --profile_max_seq_length 16384 \
-    --profile_seq_length_step 4096 \
+    --profile_fixed_seq_length_list 16384 \
     --num_layertype 1 \
     --max_tp_deg 8 \
     --max_per_device_train_batch_size 4 \

@@ -155,7 +155,7 @@ class RuntimeProfiler:
                 print(f'\t{key}: {val:.2f} MB')
             
             if self.args.save_memory_flag != 0 and (self.first_rank or self.last_rank):
-                assert self.args.runtime_profiler_to_static == 0, "Only support dynamic graph memory profiling"
+                # assert self.args.runtime_profiler_to_static == 0, "Only support dynamic graph memory profiling"
                 
                 memory_path = self.get_memory_profiling_path()
                 config = read_json_config(memory_path)
@@ -167,18 +167,20 @@ class RuntimeProfiler:
                 seq_info = num2str(self.args.seq_len, "seq")
 
                 if strategy_info not in config:
-                    print(f'[linguangming] init empty')
+                    # print(f'[linguangming] init empty')
                     config[strategy_info] = {}
                 
                 if self.first_rank:
-                    print(f'[linguangming] this is first_rank')
+                    # print(f'[linguangming] this is first_rank')
                     config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_first_ms'] = mem_dict["model_states"]
-                    config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_first_act'] = mem_dict["activation"]
+                    if self.args.runtime_profiler_to_static == 0: # only when use dynamic graph, the information of activation could get
+                        config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_first_act'] = mem_dict["activation"]
                     config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_first_act_peak'] = mem_dict["peak_activation"]
                 elif self.last_rank:
-                    print(f'[linguangming] this is last_rank')
+                    # print(f'[linguangming] this is last_rank')
                     config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_last_ms'] = mem_dict["model_states"]
-                    config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_last_act'] = mem_dict["activation"]
+                    if self.args.runtime_profiler_to_static == 0: # only when use dynamic graph, the information of activation could get
+                        config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_last_act'] = mem_dict["activation"]
                     config[strategy_info][f'{layernum_info}_bsz{args.global_batch_size}_{seq_info}_last_act_peak'] = mem_dict["peak_activation"]
                 
                 
