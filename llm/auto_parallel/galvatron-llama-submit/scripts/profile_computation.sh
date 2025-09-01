@@ -23,7 +23,7 @@ export SOT_LOG_LEVEL=4
 export PYTHONPATH=../../../:$PYTHONPATH
 
 TRAINER="./train_qwen.py"
-LAUNCHER="${interpreter} -u -m paddle.distributed.launch"
+LAUNCHER="python -u -m paddle.distributed.launch"
 LAUNCHER="${LAUNCHER} --gpus 7"  # 设置需要使用的GPU
 LAUNCHER="${LAUNCHER} --log_dir output/$dir_name/$task_name""_log ${TRAINER} --output_dir "./output""
 
@@ -135,7 +135,7 @@ MODEL_PROFILER_ARGS="
     --num_layertype 1 \
 "
 
-${interpreter} ./profile.py \
+python ./profile.py \
     $MODEL_ARGS \
     $TRAIN_ARGS \
     $CONFIG_ARGS \
